@@ -3,16 +3,16 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 public class Start2 {
+    public static ExecutorService executor = Executors.newFixedThreadPool(5);
     public static void main(String[] args) {
-        int numParticles = 200;
-        int numCycles = 100;
+        int numParticles = 500;
+        int numCycles = 10000;
         int width = 800;
         int height = 600;
         String mode = "Parallel"; // "Sequential" or "Parallel"
-        long maxRunTime = 60000; // (for testing) 60000ms=1min
+        long maxRunTime = 360000; // (for testing) 60000ms=1min
 
         boolean withinTimeLimit = true;
         while (withinTimeLimit) {
@@ -86,29 +86,17 @@ public class Start2 {
     }
 
     private static void updateParticlesInParallel(List<Particle> particles, int width, int height) {
-        int numThreads = Math.min(particles.size(), Runtime.getRuntime().availableProcessors());
-        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        int numThreads = 5;
+        final Particle[] particlesArray = particles.toArray(new Particle[0]); // create thread pool
 
-        try {
-            for (int i = 0; i < numThreads; i++) {
-                final int start = i * (particles.size() / numThreads);
-                final int end = (i == numThreads - 1) ? particles.size() : (i + 1) * (particles.size() / numThreads);
-                final Particle[] particlesArray = particles.toArray(new Particle[0]); // list to array
-                executor.submit(() -> {
-                    for (int j = start; j < end; j++) {
-                        particlesArray[j].update(particlesArray, j, width, height);
-                    }
-                });
-            }
-        } finally {
-            executor.shutdown(); // shut down the executor
-
-            try {
-                // wait for all tasks to complete
-                executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        for (int i = 0; i < numThreads; i++) {
+            final int start = i * (particles.size() / numThreads);
+            final int end = (i == numThreads - 1) ? particles.size() : (i + 1) * (particles.size() / numThreads);
+            executor.submit(() -> {
+                for (int j = start; j < end; j++) {
+                    particlesArray[j].update(particlesArray, j, width, height);
+                }
+            });
         }
     }
 
