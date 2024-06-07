@@ -1,11 +1,13 @@
 import java.awt.*;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
+import static java.util.concurrent.Executors.newFixedThreadPool;
 
 public class Start2 {
-    public static ExecutorService executor = Executors.newFixedThreadPool(5);
+    private static final int numThreads = 5;
+    private static ExecutorService executor = null;
+
     public static void main(String[] args) {
         int numParticles = 500;
         int numCycles = 10000;
@@ -13,6 +15,10 @@ public class Start2 {
         int height = 600;
         String mode = "Parallel"; // "Sequential" or "Parallel"
         long maxRunTime = 360000; // (for testing) 60000ms=1min
+
+        if (mode.equals("Parallel")) {
+            executor = newFixedThreadPool(numThreads);
+        }
 
         boolean withinTimeLimit = true;
         while (withinTimeLimit) {
@@ -86,17 +92,19 @@ public class Start2 {
     }
 
     private static void updateParticlesInParallel(List<Particle> particles, int width, int height) {
-        int numThreads = 5;
-        final Particle[] particlesArray = particles.toArray(new Particle[0]); // create thread pool
+        Particle[] particlesArray = particles.toArray(new Particle[0]);
+        List<Callable<Void>> updateParticleTasks = new ArrayList<>();
 
         for (int i = 0; i < numThreads; i++) {
             final int start = i * (particles.size() / numThreads);
             final int end = (i == numThreads - 1) ? particles.size() : (i + 1) * (particles.size() / numThreads);
-            executor.submit(() -> {
-                for (int j = start; j < end; j++) {
-                    particlesArray[j].update(particlesArray, j, width, height);
-                }
-            });
+            updateParticleTasks.add(new UpdateTask(start, end, particlesArray, width, height));
+        }
+
+        try {
+            executor.invokeAll(updateParticleTasks);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 

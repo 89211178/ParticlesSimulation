@@ -1,5 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
+import java.util.concurrent.Executors;
 
 public class Frame extends JFrame {
     private static final int DEFAULT_WIDTH = 800;
@@ -25,17 +26,20 @@ public class Frame extends JFrame {
         JPanel controlPanel = new JPanel(new BorderLayout());
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
+        JLabel modeLabel = new JLabel("Mode:");
+        String[] modes = {"Sequential", "Parallel"};
+        modeComboBox = new JComboBox<>(modes);
+
         JButton startButton = new JButton("Start/Restart");
         startButton.addActionListener(e -> {
             resizeFrame();
             changeParticles();
             changeCycles();
+            if (this.getMode().equals("Parallel")) {
+                Mode.executor = Executors.newFixedThreadPool(Mode.numThreads);
+            }
             panel.updateParticles();
         });
-
-        JLabel modeLabel = new JLabel("Mode:");
-        String[] modes = {"Sequential", "Parallel"};
-        modeComboBox = new JComboBox<>(modes);
 
         buttonPanel.add(startButton);
         buttonPanel.add(modeLabel);
